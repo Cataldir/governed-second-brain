@@ -15,6 +15,7 @@ authoritative?** When two sources disagree, the one named here wins.
 | The canonical record log | `../data/memory/*.jsonl` | Authority |
 | The derived search index | `../data/indexes/memory.sqlite` (regenerated) | Authority |
 | How the store actually works | [`../src/governed_memory/`](../src/README.md) | Execution |
+| How the store is reached over MCP, and its gate | [`../src/governed_memory/mcp_server.py`](../src/README.md) + [`gate.py`](../src/README.md) | Execution |
 | Why the architecture is shaped this way | [`../docs/architecture/adr/`](../docs/architecture/README.md) | Contextual |
 
 ## Chain of responsibility

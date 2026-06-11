@@ -16,6 +16,13 @@ governed-memory write --type concept --title "..." --summary "..." \
     --sensitivity private --tag decision
 ```
 
+An agent runtime may instead reach the store over MCP
+(`src/governed_memory/mcp_server.py`). That path is **gated**: the `memory.append`
+tool is refused unless write mode has been explicitly enabled with
+`GOVERNED_MEMORY_ENABLE_WRITE=true` and `GOVERNED_MEMORY_REQUIRE_APPROVAL=false`.
+If the gate is closed, capture did not happen — do not claim it did. See
+[ADR-003](../../docs/architecture/adr/ADR-003-governed-write-surface.md).
+
 ## Rules
 
 - Do not claim that an interaction was captured unless you actually wrote a

@@ -70,6 +70,32 @@ The interesting test is `test_verify_catches_dangling_citation`: it proves the
 gate actually *fails* on a citation that points at a record that does not exist —
 the hallucinated-citation failure made mechanical.
 
+## Reaching the store over MCP
+
+The store is also reachable over the Model Context Protocol, so an agent runtime
+can query and (deliberately) write to it. The server is the *governed write
+surface* — and it is safe to expose because of its gate, not despite the absence
+of a server.
+
+```bash
+pip install -e ".[mcp]"
+
+# read-only by default — the safe posture
+python -m governed_memory.mcp_server
+
+# writes require a deliberate two-flag opt-in
+GOVERNED_MEMORY_ENABLE_WRITE=true GOVERNED_MEMORY_REQUIRE_APPROVAL=false \
+    python -m governed_memory.mcp_server
+```
+
+- **Local stdio only.** No socket, no HTTP, no record leaves the machine.
+- **Writes default-off.** `memory.append` and `memory.rebuild` are refused
+  unless *both* flags above are set. `memory.query` is never gated.
+- **Restricted records need acknowledgement**, enforced by the store.
+
+See [ADR-003](docs/architecture/adr/ADR-003-governed-write-surface.md) for the
+reasoning.
+
 ## The four-plane model
 
 The repository is partitioned so that, for any concern, exactly one file is
@@ -91,15 +117,20 @@ Two boundaries do the work:
 - **The authority plane has sub-layers.** Source records are edited; the log is
   append-only; the index is regenerated, never patched. (See
   [ADR-002](docs/architecture/adr/ADR-002-authority-plane-sublayers-and-managed-files.md).)
+- **The write surface is gated.** The MCP server is execution-plane code,
+  default-off, and local-only. (See
+  [ADR-003](docs/architecture/adr/ADR-003-governed-write-surface.md).)
 
 ## What this is honest about
 
 - **No embeddings.** Full-text search over good summaries goes a long way. Vector
   retrieval is a real upgrade *later*, once the corpus is large enough that
   keyword matching misses paraphrases — not on day one.
-- **No cloud, no MCP exfiltration.** The store is local files. Nothing here
-  ships your notes anywhere. Wiring it to a remote tool is your decision and your
-  risk, made explicitly.
+- **No cloud, no MCP exfiltration.** The store is local files. The optional MCP
+  server speaks local stdio only — it binds no socket and ships nothing off the
+  machine. Its write tools are off by default behind a deliberate two-flag
+  opt-in (see *Reaching the store over MCP* above). Reads are always available;
+  mutation is privileged.
 - **Sensitivity is opt-in.** A `restricted` record refuses to be written without
   an explicit acknowledgement, so sensitive material is never captured by
   accident.

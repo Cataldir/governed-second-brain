@@ -45,3 +45,4 @@ index, a verifier, and a strict append-only/derived split.
 
 - [ADR-001 — Four-plane governance boundary](adr/ADR-001-four-plane-governance-boundary.md)
 - [ADR-002 — Authority-plane sub-layers and Managed Files](adr/ADR-002-authority-plane-sublayers-and-managed-files.md)
+- [ADR-003 — The governed write surface (MCP): execution-plane, default-off, local-only](adr/ADR-003-governed-write-surface.md)

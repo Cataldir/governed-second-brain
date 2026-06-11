@@ -15,9 +15,11 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+mcp = ["mcp>=1.0"]
 
 [project.scripts]
 governed-memory = "governed_memory.cli:main"
+governed-memory-mcp = "governed_memory.mcp_server:main"
 
 [project.urls]
 Homepage = "https://github.com/Cataldir/governed-second-brain"

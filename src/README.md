@@ -14,6 +14,8 @@ memory store:
 | `verify.py` | The hard gate: dangling-citation and index-drift checks. |
 | `query.py` | Summary-first retrieval against the index. |
 | `cli.py` | The `write / rebuild / verify / query / seed` verbs. |
+| `gate.py` | Pure, tested write-gate policy for the MCP surface. |
+| `mcp_server.py` | Local stdio MCP server over the store, behind the gate. |
 
 ## Rules for this plane
 
