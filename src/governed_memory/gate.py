@@ -19,8 +19,12 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-# Tools that mutate the canonical log. Everything else is read-only.
-MUTATING_TOOLS = frozenset({"memory.append", "memory.rebuild"})
+# Tools that mutate governed state. Everything else is read-only.
+# ``memory.record_event`` appends a transition to the state log, so it is a
+# mutation and is gated exactly like writes to the canonical record log.
+MUTATING_TOOLS = frozenset(
+    {"memory.append", "memory.rebuild", "memory.record_event"}
+)
 
 ENABLE_WRITE_ENV = "GOVERNED_MEMORY_ENABLE_WRITE"
 REQUIRE_APPROVAL_ENV = "GOVERNED_MEMORY_REQUIRE_APPROVAL"

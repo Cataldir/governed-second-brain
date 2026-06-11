@@ -1,16 +1,19 @@
 """Command-line entry point for the governed-memory store.
 
-Five verbs that mirror the architecture:
+Verbs that mirror the architecture:
 
     write    append a record to the canonical log (authority plane)
     rebuild  project the log into the derived index (execution plane)
     verify   run the hard gate; non-zero exit on failure (the contract)
     query    summary-first retrieval against the index
     seed     load the example records so you can try it in one command
+    state    record a workflow transition with evidence (state layer)
+    history  show the transition history of a workflow entity
 
-Defaults point at ``data/memory`` (governed append-only outputs) and
+Defaults point at ``data/memory`` (governed append-only records),
+``data/state`` (governed append-only transitions), and
 ``data/indexes/memory.sqlite`` (a derived index). That mirrors the four-plane
-layout: canonical records live in ``data/``, runnable code in ``src/``.
+layout: canonical records and state live in ``data/``, runnable code in ``src/``.
 """
 
 from __future__ import annotations
@@ -19,6 +22,12 @@ import argparse
 import sys
 from pathlib import Path
 
+from governed_memory.events import (
+    TransitionError,
+    current_status,
+    iter_events,
+    record_transition,
+)
 from governed_memory.index import rebuild_index
 from governed_memory.query import query
 from governed_memory.records import MemoryRecord
@@ -26,6 +35,7 @@ from governed_memory.store import append_record
 from governed_memory.verify import verify
 
 DEFAULT_MEMORY_DIR = Path("data/memory")
+DEFAULT_STATE_DIR = Path("data/state")
 DEFAULT_DB_PATH = Path("data/indexes/memory.sqlite")
 
 
@@ -76,13 +86,54 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 
 def _cmd_query(args: argparse.Namespace) -> int:
-    hits = query(args.db, args.text, limit=args.limit, open_body=args.open_body)
+    hits = query(
+        args.db,
+        args.text,
+        limit=args.limit,
+        open_body=args.open_body,
+        reveal=args.reveal,
+    )
     if not hits:
         print("no matches")
         return 0
     for hit in hits:
         print(hit.render())
         print()
+    return 0
+
+
+def _cmd_state(args: argparse.Namespace) -> int:
+    try:
+        event = record_transition(
+            args.entity,
+            args.to_status,
+            args.state_dir,
+            evidence=args.evidence or [],
+            note=args.note or "",
+        )
+    except TransitionError as exc:
+        print(f"refused: {exc}")
+        return 1
+    arrow = f"{event.from_status or 'NEW'} -> {event.to_status}"
+    print(f"recorded {event.entity}: {arrow}")
+    if event.evidence:
+        print("  evidence: " + ", ".join(event.evidence))
+    print(f"  stored_at: {args.state_dir / 'events.jsonl'}")
+    return 0
+
+
+def _cmd_history(args: argparse.Namespace) -> int:
+    events = [e for e in iter_events(args.state_dir) if e.entity == args.entity]
+    if not events:
+        print(f"no history for {args.entity!r}")
+        return 0
+    for event in events:
+        arrow = f"{event.from_status or 'NEW'} -> {event.to_status}"
+        line = f"{event.timestamp}  {arrow}"
+        if event.evidence:
+            line += "  [" + ", ".join(event.evidence) + "]"
+        print(line)
+    print(f"current: {current_status(args.state_dir, args.entity)}")
     return 0
 
 
@@ -127,11 +178,37 @@ def build_parser() -> argparse.ArgumentParser:
     p_query.add_argument("text", help="free-text query")
     p_query.add_argument("--limit", type=int, default=5)
     p_query.add_argument("--open-body", action="store_true", help="include record bodies")
+    p_query.add_argument(
+        "--reveal",
+        action="store_true",
+        help="authorise bodies of non-public records (off by default)",
+    )
     p_query.set_defaults(func=_cmd_query)
 
     p_seed = sub.add_parser("seed", help="load the example records")
     _add_common(p_seed)
     p_seed.set_defaults(func=_cmd_seed)
+
+    p_state = sub.add_parser("state", help="record a workflow transition with evidence")
+    p_state.add_argument(
+        "--state-dir", type=Path, default=DEFAULT_STATE_DIR,
+        help="directory holding the append-only state event log",
+    )
+    p_state.add_argument("--entity", required=True, help="the workflow entity id")
+    p_state.add_argument("--to-status", required=True, help="target status")
+    p_state.add_argument(
+        "--evidence", action="append", help="evidence reference (repeatable)"
+    )
+    p_state.add_argument("--note", default="", help="optional human note")
+    p_state.set_defaults(func=_cmd_state)
+
+    p_history = sub.add_parser("history", help="show an entity's transition history")
+    p_history.add_argument(
+        "--state-dir", type=Path, default=DEFAULT_STATE_DIR,
+        help="directory holding the append-only state event log",
+    )
+    p_history.add_argument("--entity", required=True)
+    p_history.set_defaults(func=_cmd_history)
 
     return parser
 

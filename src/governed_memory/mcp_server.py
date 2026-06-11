@@ -9,12 +9,15 @@ Security posture, mirrored from the parent reference implementation:
 
 - **Local stdio only.** No HTTP, no network bind. Nothing here listens on a
   socket or ships a record off the machine.
-- **Writes default-off.** ``memory.append`` and ``memory.rebuild`` are refused
-  unless ``GOVERNED_MEMORY_ENABLE_WRITE=true`` *and*
+- **Writes default-off.** ``memory.append``, ``memory.rebuild`` and
+  ``memory.record_event`` are refused unless
+  ``GOVERNED_MEMORY_ENABLE_WRITE=true`` *and*
   ``GOVERNED_MEMORY_REQUIRE_APPROVAL=false`` — a two-step, deliberate opt-in.
 - **Restricted records need acknowledgement.** Writing ``sensitivity=restricted``
   requires ``acknowledge_restricted=true``, enforced by the store itself.
-- **Reads are always available.** ``memory.query`` works regardless of the gate.
+- **Reads are always available, but non-public bodies are redacted.**
+  ``memory.query`` works regardless of the gate; the body of a ``private`` or
+  ``restricted`` record is returned only when ``reveal=true`` is also passed.
 
 Run it:
 
@@ -34,6 +37,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from governed_memory.events import TransitionError, current_status, record_transition
 from governed_memory.gate import GatePolicy, write_gate_error
 from governed_memory.index import rebuild_index
 from governed_memory.query import query as query_store
@@ -41,6 +45,7 @@ from governed_memory.records import MemoryRecord, RecordValidationError
 from governed_memory.store import append_record
 
 DEFAULT_MEMORY_DIR = Path("data/memory")
+DEFAULT_STATE_DIR = Path("data/state")
 DEFAULT_DB_PATH = Path("data/indexes/memory.sqlite")
 
 server = Server("governed-memory")
@@ -62,7 +67,8 @@ async def list_tools() -> list[Tool]:
             name="memory.query",
             description=(
                 "Summary-first retrieval. Returns titles and summaries; bodies "
-                "only when open_body is true. Always available (read-only)."
+                "only when open_body is true. Bodies of non-public records are "
+                "redacted unless reveal is also true. Always available (read-only)."
             ),
             inputSchema={
                 "type": "object",
@@ -70,6 +76,7 @@ async def list_tools() -> list[Tool]:
                     "text": {"type": "string"},
                     "limit": {"type": "integer", "default": 5},
                     "open_body": {"type": "boolean", "default": False},
+                    "reveal": {"type": "boolean", "default": False},
                 },
                 "required": ["text"],
             },
@@ -122,6 +129,26 @@ async def list_tools() -> list[Tool]:
             ),
             inputSchema={"type": "object", "properties": {}},
         ),
+        Tool(
+            name="memory.record_event",
+            description=(
+                "Record one workflow transition with evidence in the append-only "
+                "state log. Answers: which entity, what transition, what evidence, "
+                "is it allowed from the current status, where stored. Refused if "
+                "the transition is not allowed from the current status. GATED: "
+                "refused unless write mode is explicitly enabled."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "entity": {"type": "string"},
+                    "to_status": {"type": "string"},
+                    "evidence": {"type": "array", "items": {"type": "string"}},
+                    "note": {"type": "string", "default": ""},
+                },
+                "required": ["entity", "to_status"],
+            },
+        ),
     ]
 
 
@@ -134,6 +161,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return _text({"error": blocked}, status="error")
 
     memory_dir = Path(arguments.get("memory_dir", DEFAULT_MEMORY_DIR))
+    state_dir = Path(arguments.get("state_dir", DEFAULT_STATE_DIR))
     db_path = Path(arguments.get("db", DEFAULT_DB_PATH))
 
     if name == "memory.query":
@@ -143,6 +171,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                 arguments["text"],
                 limit=int(arguments.get("limit", 5)),
                 open_body=bool(arguments.get("open_body", False)),
+                reveal=bool(arguments.get("reveal", False)),
             )
         except FileNotFoundError as exc:
             return _text({"error": str(exc)}, status="error")
@@ -156,6 +185,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                         "summary": hit.summary,
                         "sensitivity": hit.sensitivity,
                         "body": hit.body,
+                        "redacted": hit.redacted,
                     }
                     for hit in hits
                 ]
@@ -187,6 +217,28 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     if name == "memory.rebuild":
         count = rebuild_index(memory_dir, db_path)
         return _text({"records_indexed": count})
+
+    if name == "memory.record_event":
+        try:
+            event = record_transition(
+                arguments["entity"],
+                arguments["to_status"],
+                state_dir,
+                evidence=list(arguments.get("evidence", [])),
+                note=arguments.get("note", ""),
+            )
+        except TransitionError as exc:
+            return _text({"error": str(exc)}, status="error")
+        return _text(
+            {
+                "entity": event.entity,
+                "event": f"{event.from_status or 'NEW'} -> {event.to_status}",
+                "current_status": current_status(state_dir, event.entity),
+                "stored_at": str(state_dir / "events.jsonl"),
+                "evidence": event.evidence,
+            },
+            status="recorded",
+        )
 
     return _text({"error": f"unknown tool {name}"}, status="error")
 

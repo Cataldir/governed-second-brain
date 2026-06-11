@@ -29,6 +29,14 @@ def test_default_policy_denies_writes() -> None:
     assert write_gate_error("memory.rebuild", policy) is not None
 
 
+def test_record_event_is_gated_like_a_write() -> None:
+    # Recording a state transition mutates governed state, so it obeys the gate.
+    closed = GatePolicy()
+    assert write_gate_error("memory.record_event", closed) is not None
+    open_gate = GatePolicy(enable_write=True, require_approval=False)
+    assert write_gate_error("memory.record_event", open_gate) is None
+
+
 def test_reads_are_never_gated() -> None:
     policy = GatePolicy()  # most restrictive
     assert write_gate_error("memory.query", policy) is None

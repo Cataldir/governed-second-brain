@@ -10,10 +10,11 @@ memory store:
 | --- | --- |
 | `records.py` | The record contract and validation. |
 | `store.py` | Append-only JSONL write path (authority plane in code). |
+| `events.py` | Append-only state transitions, validated against current status. |
 | `index.py` | Rebuilds the derived SQLite/FTS5 index from the log. |
 | `verify.py` | The hard gate: dangling-citation and index-drift checks. |
-| `query.py` | Summary-first retrieval against the index. |
-| `cli.py` | The `write / rebuild / verify / query / seed` verbs. |
+| `query.py` | Summary-first retrieval; redacts non-public bodies unless revealed. |
+| `cli.py` | The `write / rebuild / verify / query / seed / state / history` verbs. |
 | `gate.py` | Pure, tested write-gate policy for the MCP surface. |
 | `mcp_server.py` | Local stdio MCP server over the store, behind the gate. |
 

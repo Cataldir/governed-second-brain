@@ -9,14 +9,24 @@ before changing anything here.
 | --- | --- | --- |
 | [`domains/`](domains/) | Source records (the contract) | Edit with review. |
 | `memory/` | Governed append-only output | Append only. Never rewrite a past line. |
+| `state/` | Governed append-only output | Append only. Never rewrite a past line. |
 | `indexes/` | Derived index (Managed File) | Never hand-edit. Regenerate with `governed-memory rebuild`. |
 
-## `memory/` — the canonical log
+## `memory/` — the canonical record log
 
 Records are stored as JSON Lines, one record per line, in monthly files
 (`YYYY-MM.jsonl`). This directory ships empty: the truth is *yours*, not the
 template's. Run `governed-memory seed` to populate it with example records, or
 `governed-memory write` to add your own.
+
+## `state/` — the canonical state event log
+
+Workflow transitions are stored as JSON Lines in `events.jsonl`. A record is a
+durable artifact; a state event is a *transition* — an entity moving from one
+status to the next, at a time, with evidence. Keeping them in separate logs is
+deliberate: see
+[ADR-005](../docs/architecture/adr/ADR-005-state-event-layer.md). Append with
+`governed-memory state`; replay with `governed-memory history`.
 
 ## `indexes/` — derived, disposable
 

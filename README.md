@@ -24,10 +24,11 @@ flowchart LR
     log -->|project| rebuild["rebuild"] --> idx["data/indexes/memory.sqlite<br/>derived · disposable"]
     log --> verify["verify (gate)"]
     idx --> verify
-    idx --> query["query<br/>summary-first"]
+    idx --> query["query<br/>summary-first · redacts non-public bodies"]
+    state["state<br/>(validate transition)"] -->|fsync| slog["data/state/events.jsonl<br/>append-only · canonical"]
 ```
 
-Three properties make it a memory layer rather than a pile of files:
+Five properties make it a memory layer rather than a pile of files:
 
 1. **Durable, structured artifacts** outside the context window — append-only
    JSON Lines you never rewrite.
@@ -36,6 +37,11 @@ Three properties make it a memory layer rather than a pile of files:
    summaries, not the total volume of content.
 3. **A hard verification gate** — a build-breaking check that every citation
    resolves and that the derived index matches the canonical log.
+4. **A separate state log** — workflow transitions are events in their own
+   append-only log, validated against the current status and carrying evidence,
+   so status is replayable rather than overwritten.
+5. **A visibility floor** — non-public bodies are redacted on read unless
+   explicitly revealed, so the private-to-public boundary is enforced by code.
 
 ## Quickstart
 
@@ -89,12 +95,65 @@ GOVERNED_MEMORY_ENABLE_WRITE=true GOVERNED_MEMORY_REQUIRE_APPROVAL=false \
 ```
 
 - **Local stdio only.** No socket, no HTTP, no record leaves the machine.
-- **Writes default-off.** `memory.append` and `memory.rebuild` are refused
-  unless *both* flags above are set. `memory.query` is never gated.
+- **Writes default-off.** `memory.append`, `memory.rebuild` and
+  `memory.record_event` are refused unless *both* flags above are set.
+  `memory.query` is never gated.
 - **Restricted records need acknowledgement**, enforced by the store.
+- **Non-public bodies are redacted on read.** `memory.query` returns a
+  `private`/`restricted` body only when `reveal: true` is also passed; otherwise
+  the hit carries its summary and is marked `redacted`.
 
 See [ADR-003](docs/architecture/adr/ADR-003-governed-write-surface.md) for the
 reasoning.
+
+## Workflow state, kept honest
+
+A record is a durable artifact. *Where it is in a process* is a different shape
+of truth, so it lives in a different append-only log — `data/state/events.jsonl` —
+not in a mutable field on the record. A transition is refused unless it is
+allowed from the entity's current status, and it carries evidence.
+
+```bash
+governed-memory state --entity post:hello --to-status drafted
+governed-memory state --entity post:hello --to-status audited --evidence "verify: ok"
+governed-memory state --entity post:hello --to-status published   # refused: skips submission
+governed-memory history --entity post:hello
+```
+
+Separating *what* from *where in the process* means "why is this published?" is
+answerable by replaying events. See
+[ADR-005](docs/architecture/adr/ADR-005-state-event-layer.md).
+
+## The visibility floor
+
+Every record declares a `sensitivity`. That label is enforced on the read path,
+not left to good intentions: a `private` or `restricted` **body** is redacted
+unless you explicitly ask to reveal it.
+
+```bash
+governed-memory query "weekly review" --open-body          # public bodies open; private redacted
+governed-memory query "weekly review" --open-body --reveal # deliberate: opens non-public bodies too
+```
+
+Revealing a private body is a visible act with a flag attached, not an accident
+of a smooth autocomplete. See
+[ADR-004](docs/architecture/adr/ADR-004-content-visibility-boundary.md) and the
+operational rule in
+[`content-visibility.instructions.md`](.github/instructions/content-visibility.instructions.md).
+
+## The loop, worked end to end
+
+The pieces compose into a weekly review: capture notes → rebuild + verify →
+survey summary-first → graduate what's worth keeping into cited records → advance
+the work through its lifecycle with evidence. Run the worked example against a
+throwaway store:
+
+```bash
+python -m examples.weekly_review
+```
+
+The agent-facing version of the same loop is
+[`.github/prompts/weekly-review.prompt.md`](.github/prompts/weekly-review.prompt.md).
 
 ## The four-plane model
 
@@ -120,6 +179,12 @@ Two boundaries do the work:
 - **The write surface is gated.** The MCP server is execution-plane code,
   default-off, and local-only. (See
   [ADR-003](docs/architecture/adr/ADR-003-governed-write-surface.md).)
+- **Visibility is a read-path boundary.** Non-public bodies are redacted unless
+  explicitly revealed. (See
+  [ADR-004](docs/architecture/adr/ADR-004-content-visibility-boundary.md).)
+- **State is a separate append-only log.** Transitions are validated against the
+  current status and carry evidence. (See
+  [ADR-005](docs/architecture/adr/ADR-005-state-event-layer.md).)
 
 ## What this is honest about
 
@@ -133,7 +198,9 @@ Two boundaries do the work:
   mutation is privileged.
 - **Sensitivity is opt-in.** A `restricted` record refuses to be written without
   an explicit acknowledgement, so sensitive material is never captured by
-  accident.
+  accident. And on the way out, a non-public *body* is redacted unless you
+  explicitly reveal it — the private-to-public boundary is in the read path, not
+  just in your head.
 - **It is single-user and small.** That is the point. The value is the shape, not
   the scale. Grow it deliberately.
 

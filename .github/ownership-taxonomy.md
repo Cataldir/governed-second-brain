@@ -23,3 +23,9 @@ A real system accumulates many Managed Files: mirrors of agent definitions,
 generated documentation, multiple read models. This reference architecture keeps
 exactly one — the search index — because one is enough to demonstrate the rule:
 *derived files are regenerated, never patched.*
+
+Note what is **not** on this list. `data/memory/*.jsonl` and
+`data/state/events.jsonl` are canonical, append-only sources of truth, not
+Managed Files — you append to them, you never regenerate them. The index is
+derived *from* them. The distinction is the whole point: confuse a source with a
+derived view and you will eventually "regenerate" something you cannot get back.
