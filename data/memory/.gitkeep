@@ -1,0 +1,4 @@
+# The canonical record log lives here as append-only JSON Lines (YYYY-MM.jsonl).
+# This directory ships empty on purpose — the truth is yours, not the template's.
+# Run `governed-memory seed` to add example records, or `governed-memory write`
+# to add your own.

@@ -1,0 +1,3 @@
+# The derived SQLite/FTS5 index is written here by `governed-memory rebuild`.
+# Index files are git-ignored: they are never the source of truth and are always
+# reconstructable from data/memory/*.jsonl. This .gitkeep only preserves the dir.

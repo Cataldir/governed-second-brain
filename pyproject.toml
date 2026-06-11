@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "governed-second-brain"
+version = "0.1.0"
+description = "A reference architecture for a governed AI memory layer that earns the word 'memory'."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Ricardo Cataldi" }]
+keywords = ["memory", "rag", "agents", "governance", "second-brain"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+governed-memory = "governed_memory.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Cataldir/governed-second-brain"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/governed_memory"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]

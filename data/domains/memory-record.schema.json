@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cataldir/governed-second-brain/data/domains/memory-record.schema.json",
+  "title": "MemoryRecord",
+  "description": "A single durable memory artifact in the governed store. Canonical records live append-only in data/memory/*.jsonl; the validator in src/governed_memory/records.py enforces this contract on write.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "timestamp", "type", "title", "summary", "sensitivity", "sources", "tags"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable unique identifier (UUID4). Citations reference this value."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 creation time. Determines the monthly log file."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["source", "concept"],
+      "description": "'source' is something ingested; 'concept' is a durable idea that cites sources."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The load-bearing field. Indexed for summary-first navigation; must stand on its own."
+    },
+    "body": {
+      "type": "string",
+      "description": "Full content. NOT indexed for full-text search; opened only on demand."
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["public", "private", "restricted"],
+      "description": "'restricted' records require an explicit acknowledgement to write."
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ids of cited records. Must be empty for a 'source'. Every id MUST resolve to an existing record (verified)."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "content_sha256": {
+      "type": "string",
+      "description": "Derived content hash for drift/tamper checks. Computed on write; not authored by hand."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "source" } } },
+      "then": { "properties": { "sources": { "maxItems": 0 } } }
+    }
+  ]
+}

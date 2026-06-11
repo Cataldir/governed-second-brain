@@ -1,0 +1,25 @@
+# Ownership taxonomy — Managed Files
+
+A **Managed File** is any file that automation creates or maintains and that a
+human (or agent) must not edit by hand. Before merging a change that touches one,
+confirm it is declared here with all four fields.
+
+| Managed File | Canonical source | Regeneration entrypoint | Drift-check | Failure mode |
+| --- | --- | --- | --- | --- |
+| `data/indexes/memory.sqlite` | `data/memory/*.jsonl` | `governed-memory rebuild` | `governed-memory verify` | Rebuild from the log |
+
+## Rules
+
+- If a file is a Managed File and is **not** declared above, do not edit it.
+  Add the declaration first.
+- A change that affects a Managed File must run its drift-check and include the
+  result. If drift is found and the source is correct, regenerate in the same
+  change. If the source is wrong, fix the source first, then regenerate.
+- Derived files are never the source of truth. The canonical column always wins.
+
+## Why so small?
+
+A real system accumulates many Managed Files: mirrors of agent definitions,
+generated documentation, multiple read models. This reference architecture keeps
+exactly one — the search index — because one is enough to demonstrate the rule:
+*derived files are regenerated, never patched.*

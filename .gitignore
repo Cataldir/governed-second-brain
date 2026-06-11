@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+
+# Derived indexes are NEVER committed. They are rebuilt from the canonical log.
+data/indexes/*.sqlite
+data/indexes/*.sqlite-*
+
+# Local notes / scratch
+.DS_Store
+*.local
+tmp/
