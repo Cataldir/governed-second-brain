@@ -23,8 +23,19 @@ smallest faithful demonstration of that shape.
 | --- | --- | --- | --- |
 | Operational | `.github/` | Loadable agent behaviour, instructions, skills | Edit with review |
 | Contextual | `docs/` | Rationale, ADRs, architecture notes | Edit with review; never operational authority |
-| Authority | `data/` | Canonical records, governed outputs, derived indexes | Sub-layered; see boundary instruction |
+| Authority | `data/` | Canonical records, governed outputs, derived indexes, **personal context** (`data/myself/`) | Sub-layered; see boundary instruction |
 | Execution | `src/` | Runnable code, validators, CLIs | Edit with review and tests |
+
+## Two surfaces beyond the content planes
+
+A faithful deployment is more than the four content planes. Two top-level
+surfaces are recognised and governed (see
+[ADR-007](../docs/architecture/adr/ADR-007-personal-context-plane.md)):
+
+| Surface | Root | What it is | Rule |
+| --- | --- | --- | --- |
+| Agent memory | `memory/` | The agent's own working notes (repo/ and session/ scopes) | Advisory and prunable. A note never outranks a verified record. No secrets, no personal data. |
+| Infrastructure | `infra/` | Execution-plane deployment surface for the gated MCP server | Default-off, local-first. Edit with review. |
 
 ## Operating rules
 
@@ -36,6 +47,10 @@ smallest faithful demonstration of that shape.
   it from the canonical log.
 - Any change to the record shape (`data/domains/memory-record.schema.json`) must
   update the validator in `src/governed_memory/` in the same change.
+- Personal context lives in `data/myself/`, governed by the same visibility
+  floor. This repository ships **types, schemas, and synthetic templates only** —
+  never a real person's data. A personal-data type an agent relies on must be
+  declared in `data/myself/personal-data-catalog.md` first.
 - The verifier is a gate, not advice. Do not merge a change that leaves
   `governed-memory verify` failing.
 

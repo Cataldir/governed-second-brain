@@ -8,6 +8,7 @@ before changing anything here.
 | Directory | Sub-layer | Edit rule |
 | --- | --- | --- |
 | [`domains/`](domains/) | Source records (the contract) | Edit with review. |
+| [`myself/`](myself/) | Source records (personal context) | Edit with review. Sensitivity-labelled; templates only in this repo. |
 | `memory/` | Governed append-only output | Append only. Never rewrite a past line. |
 | `state/` | Governed append-only output | Append only. Never rewrite a past line. |
 | `indexes/` | Derived index (Managed File) | Never hand-edit. Regenerate with `governed-memory rebuild`. |
@@ -40,3 +41,14 @@ the source of truth and is always reconstructable. Delete it and run
 shape of a record. If you change it, change the validator in
 `src/governed_memory/records.py` in the same commit. The schema and the code that
 enforces it must never disagree.
+
+## `myself/` — personal context
+
+What makes this a model of a person rather than a filing cabinet:
+[`myself/`](myself/) holds identity, voice, goals, and the personal-data types
+an agent is licensed to use. It is governed by the same `sensitivity` label and
+the same visibility floor as everything else — and it ships **templates and a
+type catalog only**, never a real person's data. See
+[`myself/README.md`](myself/README.md),
+[`myself/personal-data-catalog.md`](myself/personal-data-catalog.md), and
+[ADR-007](../docs/architecture/adr/ADR-007-personal-context-plane.md).

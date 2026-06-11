@@ -49,3 +49,5 @@ index, a verifier, and a strict append-only/derived split.
 - [ADR-004 — Visibility is a read-path boundary, not a label](adr/ADR-004-content-visibility-boundary.md)
 - [ADR-005 — State is a separate append-only log from records](adr/ADR-005-state-event-layer.md)
 - [ADR-006 — Semantic retrieval is optional, summary-only, derived, and pluggable](adr/ADR-006-semantic-retrieval.md)
+- [ADR-007 — A personal-context plane: types over contents](adr/ADR-007-personal-context-plane.md)
+- [ADR-006 — Semantic retrieval is optional, summary-only, derived, and pluggable](adr/ADR-006-semantic-retrieval.md)

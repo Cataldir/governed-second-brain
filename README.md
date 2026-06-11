@@ -192,8 +192,13 @@ see which.
 | --- | --- | --- |
 | Operational | [`.github/`](.github/) | Loadable agent behaviour: instructions, skills, agent personas. |
 | Contextual | [`docs/`](docs/) | Rationale and decision records. Explains; never enforces. |
-| Authority | [`data/`](data/) | Canonical records, governed outputs, derived indexes. |
+| Authority | [`data/`](data/) | Canonical records, governed outputs, derived indexes, and personal context (`data/myself/`). |
 | Execution | [`src/`](src/) | The runnable code: validator, index builder, verifier, CLI. |
+
+Two more top-level surfaces complete a faithful deployment ([ADR-007](docs/architecture/adr/ADR-007-personal-context-plane.md)):
+[`memory/`](memory/) is the agent's own advisory working notes (never the
+canonical log), and [`infra/`](infra/) is the execution-plane deployment surface
+for the gated MCP server.
 
 Two boundaries do the work:
 
@@ -215,6 +220,10 @@ Two boundaries do the work:
 - **Semantic retrieval is optional and summary-only.** Vectors are derived,
   default-off, pluggable, and never built from bodies. (See
   [ADR-006](docs/architecture/adr/ADR-006-semantic-retrieval.md).)
+- **The person is modelled, not just their notes.** Personal context lives in
+  `data/myself/`, governed by the same visibility floor; the repo ships types,
+  schemas, and synthetic templates only. (See
+  [ADR-007](docs/architecture/adr/ADR-007-personal-context-plane.md).)
 
 ## What this is honest about
 

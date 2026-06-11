@@ -217,4 +217,3 @@ def query(
         )
     finally:
         connection.close()
-

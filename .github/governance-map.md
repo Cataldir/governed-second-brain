@@ -13,6 +13,8 @@ authoritative?** When two sources disagree, the one named here wins.
 | Whether a non-public body may cross into a public artifact | [`instructions/content-visibility.instructions.md`](instructions/content-visibility.instructions.md) | Operational |
 | Whether/how interaction capture happens | [`instructions/interaction-capture.instructions.md`](instructions/interaction-capture.instructions.md) | Operational |
 | The shape of a memory record | [`../data/domains/memory-record.schema.json`](../data/domains/memory-record.schema.json) | Authority |
+| The shape of a personal-context record | [`../data/domains/personal-profile.schema.json`](../data/domains/personal-profile.schema.json) | Authority |
+| Which types of personal data the agents may use | [`../data/myself/personal-data-catalog.md`](../data/myself/personal-data-catalog.md) | Authority |
 | The canonical record log | `../data/memory/*.jsonl` | Authority |
 | The canonical state event log | `../data/state/events.jsonl` | Authority |
 | The derived search index | `../data/indexes/memory.sqlite` (regenerated) | Authority |
@@ -21,6 +23,8 @@ authoritative?** When two sources disagree, the one named here wins.
 | How workflow state transitions are validated | [`../src/governed_memory/events.py`](../src/README.md) | Execution |
 | How semantic/hybrid retrieval and embeddings work | [`../src/governed_memory/embeddings.py`](../src/README.md) + [`query.py`](../src/README.md) | Execution |
 | Why the architecture is shaped this way | [`../docs/architecture/adr/`](../docs/architecture/README.md) | Contextual |
+| The agent's own working notes (advisory, not canonical) | [`../memory/`](../memory/) | Operational-adjacent |
+| How the store is deployed (gated MCP server) | [`../infra/`](../infra/) | Execution |
 
 ## Chain of responsibility
 

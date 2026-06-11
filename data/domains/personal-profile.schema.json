@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cataldir/governed-second-brain/data/domains/personal-profile.schema.json",
+  "title": "PersonalProfileRecord",
+  "description": "A single personal-context record about the user: identity, voice, goals, or another category from data/myself/. Carries the same sensitivity vocabulary as MemoryRecord so one visibility floor governs both. Reference templates are synthetic; this schema describes the shape, never a real person's data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "timestamp", "category", "title", "summary", "sensitivity", "tags"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable unique identifier (UUID4)."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 creation or last-revision time."
+    },
+    "category": {
+      "type": "string",
+      "enum": ["identity", "career", "knowledge", "finances", "health", "family"],
+      "description": "Which personal-context area this record belongs to. Each category declares a default sensitivity in data/myself/personal-data-catalog.md."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Navigation text. Indexed for summary-first retrieval; must stand on its own and never restate a restricted body."
+    },
+    "body": {
+      "type": "string",
+      "description": "Full personal content. NOT indexed; redacted on read unless explicitly revealed, per the sensitivity label."
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["public", "private", "restricted"],
+      "description": "Drives the visibility floor. Personal contact, finances, health, and relationships default to 'restricted'."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "content_sha256": {
+      "type": "string",
+      "description": "Derived content hash for drift/tamper checks. Computed on write; not authored by hand."
+    }
+  }
+}

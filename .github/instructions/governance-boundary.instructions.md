@@ -17,13 +17,23 @@ is the checklist.
 | Authority | `data/` | Three sub-layers — classify before editing (below). |
 | Execution | `src/` | Edit with review and tests. |
 
+## Two surfaces beyond the content planes
+
+A faithful deployment also has two recognised top-level surfaces (see
+[ADR-007](../../docs/architecture/adr/ADR-007-personal-context-plane.md)):
+
+| Surface | Root | Edit rule |
+| --- | --- | --- |
+| Agent memory | `memory/` | Advisory working notes. Prune freely. A note never outranks a verified record. No secrets, no personal data. |
+| Infrastructure | `infra/` | Execution-plane deployment surface. Edit with review. Keep the write surface default-off and local-first. |
+
 ## Authority-plane sub-layers
 
 Before editing anything under `data/`, classify it:
 
 | Sub-layer | Example | Edit rule |
 | --- | --- | --- |
-| Source records | `data/domains/*.schema.json` | Edit directly with review. |
+| Source records | `data/domains/*.schema.json`, `data/myself/**` | Edit directly with review. Personal context is sensitivity-labelled; this repo ships templates only. |
 | Governed append-only outputs | `data/memory/*.jsonl` | Append only. Never rewrite a past line. Compaction writes a *new* file. |
 | Derived indexes | `data/indexes/memory.sqlite` | Never edit by hand. Regenerate from the canonical source. |
 
