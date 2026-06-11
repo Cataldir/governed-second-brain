@@ -12,7 +12,7 @@ is the checklist.
 
 | Plane | Root | Edit rule |
 | --- | --- | --- |
-| Operational | `.github/` | Edit canonical files with review. Never patch a generated mirror; regenerate it. |
+| Operational | `.github/` | The agent personas, prompts, and skills here are **generated mirrors** of `data/agents/`. Edit the canonical source and regenerate; never patch a mirror. Other `.github` files (this instruction, the maps) are canonical — edit with review. |
 | Contextual | `docs/` | Edit with review. Never a source of operational authority. |
 | Authority | `data/` | Three sub-layers — classify before editing (below). |
 | Execution | `src/` | Edit with review and tests. |
@@ -33,7 +33,7 @@ Before editing anything under `data/`, classify it:
 
 | Sub-layer | Example | Edit rule |
 | --- | --- | --- |
-| Source records | `data/domains/*.schema.json`, `data/myself/**` | Edit directly with review. Personal context is sensitivity-labelled; this repo ships templates only. |
+| Source records | `data/domains/*.schema.json`, `data/myself/**`, `data/agents/**` | Edit directly with review. `data/agents/**` is the canonical source for the `.github` operational mirrors. Personal context is sensitivity-labelled; this repo ships templates only. |
 | Governed append-only outputs | `data/memory/*.jsonl` | Append only. Never rewrite a past line. Compaction writes a *new* file. |
 | Derived indexes | `data/indexes/memory.sqlite` | Never edit by hand. Regenerate from the canonical source. |
 
@@ -52,9 +52,11 @@ do not edit it — declare it first.
 
 Any change affecting a Managed File must:
 
-1. run the declared drift-check (`governed-memory verify`);
+1. run the declared drift-check (`governed-memory verify` for the index,
+   `governed-memory sync-mirrors --check` for the `.github` mirrors);
 2. include the result in the change description;
-3. regenerate the Managed File if the source is correct and it drifted.
+3. regenerate the Managed File if the source is correct and it drifted
+   (`governed-memory rebuild` or `governed-memory sync-mirrors`).
 
 ## The non-negotiable
 

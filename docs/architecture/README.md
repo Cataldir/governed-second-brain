@@ -50,4 +50,5 @@ index, a verifier, and a strict append-only/derived split.
 - [ADR-005 — State is a separate append-only log from records](adr/ADR-005-state-event-layer.md)
 - [ADR-006 — Semantic retrieval is optional, summary-only, derived, and pluggable](adr/ADR-006-semantic-retrieval.md)
 - [ADR-007 — A personal-context plane: types over contents](adr/ADR-007-personal-context-plane.md)
+- [ADR-008 — The operational facade is generated from canonical sources](adr/ADR-008-operational-facade-generation.md)
 - [ADR-006 — Semantic retrieval is optional, summary-only, derived, and pluggable](adr/ADR-006-semantic-retrieval.md)

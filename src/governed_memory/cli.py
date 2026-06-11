@@ -9,6 +9,8 @@ Verbs that mirror the architecture:
     seed     load the example records so you can try it in one command
     state    record a workflow transition with evidence (state layer)
     history  show the transition history of a workflow entity
+    sync-mirrors  regenerate the .github operational mirrors from canonical
+                  sources under data/agents/ (--check to gate on drift)
 
 Defaults point at ``data/memory`` (governed append-only records),
 ``data/state`` (governed append-only transitions), and
@@ -30,6 +32,7 @@ from governed_memory.events import (
     record_transition,
 )
 from governed_memory.index import rebuild_index
+from governed_memory.mirror import sync_mirrors
 from governed_memory.query import query
 from governed_memory.records import MemoryRecord
 from governed_memory.store import append_record
@@ -151,6 +154,10 @@ def _cmd_seed(args: argparse.Namespace) -> int:
     written = seed(args.memory_dir)
     print(f"seeded {written} record(s) into {args.memory_dir}")
     return 0
+def _cmd_sync_mirrors(args: argparse.Namespace) -> int:
+    result = sync_mirrors(args.repo_root, check=args.check)
+    print(result)
+    return 0 if result.ok else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -228,6 +235,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_history.add_argument("--entity", required=True)
     p_history.set_defaults(func=_cmd_history)
+
+    p_mirrors = sub.add_parser(
+        "sync-mirrors",
+        help="regenerate .github operational mirrors from canonical data/agents/",
+    )
+    p_mirrors.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path("."),
+        help="repository root containing data/agents/ and .github/",
+    )
+    p_mirrors.add_argument(
+        "--check",
+        action="store_true",
+        help="report drift and exit non-zero instead of writing (the gate)",
+    )
+    p_mirrors.set_defaults(func=_cmd_sync_mirrors)
 
     return parser
 

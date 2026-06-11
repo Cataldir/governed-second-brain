@@ -15,6 +15,7 @@ authoritative?** When two sources disagree, the one named here wins.
 | The shape of a memory record | [`../data/domains/memory-record.schema.json`](../data/domains/memory-record.schema.json) | Authority |
 | The shape of a personal-context record | [`../data/domains/personal-profile.schema.json`](../data/domains/personal-profile.schema.json) | Authority |
 | Which types of personal data the agents may use | [`../data/myself/personal-data-catalog.md`](../data/myself/personal-data-catalog.md) | Authority |
+| The canonical agent personas, prompts, and skills | [`../data/agents/`](../data/agents/) | Authority |
 | The canonical record log | `../data/memory/*.jsonl` | Authority |
 | The canonical state event log | `../data/state/events.jsonl` | Authority |
 | The derived search index | `../data/indexes/memory.sqlite` (regenerated) | Authority |
@@ -25,6 +26,7 @@ authoritative?** When two sources disagree, the one named here wins.
 | Why the architecture is shaped this way | [`../docs/architecture/adr/`](../docs/architecture/README.md) | Contextual |
 | The agent's own working notes (advisory, not canonical) | [`../memory/`](../memory/) | Operational-adjacent |
 | How the store is deployed (gated MCP server) | [`../infra/`](../infra/) | Execution |
+| How the `.github` operational mirrors are regenerated and drift-checked | [`../src/governed_memory/mirror.py`](../src/README.md) | Execution |
 
 ## Chain of responsibility
 
@@ -38,7 +40,11 @@ authoritative?** When two sources disagree, the one named here wins.
    never bypasses that floor.
 5. **Verifier** (`src/governed_memory/verify.py`) enforces referential integrity,
    index/log consistency, and vector drift as a build-breaking gate.
-6. **ADRs** record *why* these boundaries exist, and may assert requirements —
+6. **Mirror generator** (`src/governed_memory/mirror.py`) regenerates the
+   `.github` operational facade from canonical `data/agents/` sources;
+   `sync-mirrors --check` gates on drift, so a hand-patched mirror breaks the
+   build the same way a hand-edited index does.
+7. **ADRs** record *why* these boundaries exist, and may assert requirements —
    but a requirement is only real once a schema, a test, or a check enforces it.
 
 If you find an ADR asserting a "MUST" that nothing enforces, the requirement is

@@ -15,7 +15,8 @@ memory store:
 | `embeddings.py` | Pluggable, summary-only encoders for semantic retrieval. |
 | `verify.py` | The hard gate: dangling-citation, index-drift, vector-drift checks. |
 | `query.py` | Summary-first retrieval (lexical/semantic/hybrid); redacts non-public bodies unless revealed. |
-| `cli.py` | The `write / rebuild / verify / query / seed / state / history` verbs. |
+| `mirror.py` | Regenerates the `.github` operational mirrors from canonical `data/agents/`; drift-check. |
+| `cli.py` | The `write / rebuild / verify / query / seed / state / history / sync-mirrors` verbs. |
 | `gate.py` | Pure, tested write-gate policy for the MCP surface. |
 | `mcp_server.py` | Local stdio MCP server over the store, behind the gate. |
 

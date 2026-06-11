@@ -7,6 +7,7 @@ confirm it is declared here with all four fields.
 | Managed File | Canonical source | Regeneration entrypoint | Drift-check | Failure mode |
 | --- | --- | --- | --- | --- |
 | `data/indexes/memory.sqlite` | `data/memory/*.jsonl` | `governed-memory rebuild` | `governed-memory verify` | Rebuild from the log |
+| `.github/agents/**`, `.github/prompts/**`, `.github/skills/**` | `data/agents/**` | `governed-memory sync-mirrors` | `governed-memory sync-mirrors --check` | Regenerate from canonical |
 
 ## Rules
 
@@ -21,8 +22,11 @@ confirm it is declared here with all four fields.
 
 A real system accumulates many Managed Files: mirrors of agent definitions,
 generated documentation, multiple read models. This reference architecture keeps
-exactly one — the search index — because one is enough to demonstrate the rule:
-*derived files are regenerated, never patched.*
+exactly two — the search index and the operational mirrors — because two is
+enough to demonstrate the rule on *both* planes: *derived files are regenerated,
+never patched.* The index proves it for the data plane; the `.github` mirrors
+prove it for the operational facade (see
+[ADR-008](../docs/architecture/adr/ADR-008-operational-facade-generation.md)).
 
 Note what is **not** on this list. `data/memory/*.jsonl` and
 `data/state/events.jsonl` are canonical, append-only sources of truth, not

@@ -21,9 +21,9 @@ smallest faithful demonstration of that shape.
 
 | Plane | Root | Responsibility | Edit authority |
 | --- | --- | --- | --- |
-| Operational | `.github/` | Loadable agent behaviour, instructions, skills | Edit with review |
+| Operational | `.github/` | Loadable agent behaviour, instructions, skills | Maps/instructions are canonical; agent personas, prompts, and skills are **generated mirrors** of `data/agents/` |
 | Contextual | `docs/` | Rationale, ADRs, architecture notes | Edit with review; never operational authority |
-| Authority | `data/` | Canonical records, governed outputs, derived indexes, **personal context** (`data/myself/`) | Sub-layered; see boundary instruction |
+| Authority | `data/` | Canonical records, governed outputs, derived indexes, agent sources (`data/agents/`), **personal context** (`data/myself/`) | Sub-layered; see boundary instruction |
 | Execution | `src/` | Runnable code, validators, CLIs | Edit with review and tests |
 
 ## Two surfaces beyond the content planes
@@ -45,6 +45,10 @@ surfaces are recognised and governed (see
   record or write a compacted successor file.
 - The index under `data/indexes/` is **derived**. Never hand-edit it. Regenerate
   it from the canonical log.
+- The agent personas, prompts, and skills under `.github/agents|prompts|skills`
+  are **generated mirrors** of `data/agents/`. Edit the canonical source and run
+  `governed-memory sync-mirrors`; never patch a mirror. `sync-mirrors --check`
+  gates on drift (see [ADR-008](../docs/architecture/adr/ADR-008-operational-facade-generation.md)).
 - Any change to the record shape (`data/domains/memory-record.schema.json`) must
   update the validator in `src/governed_memory/` in the same change.
 - Personal context lives in `data/myself/`, governed by the same visibility
