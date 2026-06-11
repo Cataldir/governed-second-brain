@@ -249,6 +249,31 @@ Two boundaries do the work:
   schemas, and synthetic templates only. (See
   [ADR-007](docs/architecture/adr/ADR-007-personal-context-plane.md).)
 
+## The specialist workbench
+
+A memory that won't lie is more useful when something reasons *from* it. So the
+operational plane also ships a portable team of specialist agents — the same
+shape as the memory store: persona files that declare a role, a tool boundary,
+and the rules they must follow, with their prompts and skills colocated.
+
+These are deliberately **general**. None of them encode a personal role, a
+voice, or a private business; that material stays out of a public reference
+architecture. What ships is the working surface a peer can read on day one:
+
+| Family | Agents | Comes with |
+| --- | --- | --- |
+| Engineering | Python, Rust, TypeScript, UI, and a code-guidelines reviewer | language `*-implement` / `*-review` / `*-refactor` prompts, UI audits, and the shared paradigm / pattern / refactoring instructions |
+| Architecture & lead | System architect, tech lead, connector engineer, platform/CI, PR reviewer | `tech-lead-*`, `architecture-*`, `connector-*`, `migration-plan`, `tech-debt`, and platform/security prompts |
+| Business | Strategy, competitive intelligence, financial modelling, process, risk | the matching `business-*` prompts and skills |
+| Azure | AKS, APIM, Blob, Container Apps, Cosmos, Foundry, Postgres, Redis, Static Web Apps | architecture-review, cost-optimize, migrate, and troubleshoot prompts |
+
+The agents discover each other through
+[`.github/agents/team-mapping.md`](.github/agents/team-mapping.md) and delegate by
+role. They are clients of the memory store, never its source of truth — the same
+rule that governs every other writer. Drop them into any repository, point them
+at your own governed memory, and they reason from a record that can be proven
+rather than one that can be invented.
+
 ## What this is honest about
 
 - **Embeddings are optional, summary-only, and pluggable.** The default install
@@ -270,8 +295,9 @@ Two boundaries do the work:
   accident. And on the way out, a non-public *body* is redacted unless you
   explicitly reveal it — the private-to-public boundary is in the read path, not
   just in your head.
-- **It is single-user and small.** That is the point. The value is the shape, not
-  the scale. Grow it deliberately.
+- **The core is single-user and small.** That is the point. The value is the
+  shape, not the scale. The specialist workbench around it is portable and
+  general, but the memory at the centre stays yours. Grow it deliberately.
 
 ## Provenance
 
