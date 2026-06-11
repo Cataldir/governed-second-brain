@@ -19,6 +19,7 @@ authoritative?** When two sources disagree, the one named here wins.
 | How the store actually works | [`../src/governed_memory/`](../src/README.md) | Execution |
 | How the store is reached over MCP, and its gate | [`../src/governed_memory/mcp_server.py`](../src/README.md) + [`gate.py`](../src/README.md) | Execution |
 | How workflow state transitions are validated | [`../src/governed_memory/events.py`](../src/README.md) | Execution |
+| How semantic/hybrid retrieval and embeddings work | [`../src/governed_memory/embeddings.py`](../src/README.md) + [`query.py`](../src/README.md) | Execution |
 | Why the architecture is shaped this way | [`../docs/architecture/adr/`](../docs/architecture/README.md) | Contextual |
 
 ## Chain of responsibility
@@ -28,9 +29,11 @@ authoritative?** When two sources disagree, the one named here wins.
 3. **State machine** (`src/governed_memory/events.py`) refuses a transition that
    is not allowed from the entity's current status, and records evidence with it.
 4. **Visibility floor** (`src/governed_memory/query.py`) redacts non-public bodies
-   on read unless an explicit reveal flag is passed.
-5. **Verifier** (`src/governed_memory/verify.py`) enforces referential integrity
-   and index/log consistency as a build-breaking gate.
+   on read unless an explicit reveal flag is passed. Vectors are built from
+   navigation text only (`src/governed_memory/embeddings.py`), so semantic recall
+   never bypasses that floor.
+5. **Verifier** (`src/governed_memory/verify.py`) enforces referential integrity,
+   index/log consistency, and vector drift as a build-breaking gate.
 6. **ADRs** record *why* these boundaries exist, and may assert requirements —
    but a requirement is only real once a schema, a test, or a check enforces it.
 

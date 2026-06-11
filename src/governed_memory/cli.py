@@ -3,9 +3,9 @@
 Verbs that mirror the architecture:
 
     write    append a record to the canonical log (authority plane)
-    rebuild  project the log into the derived index (execution plane)
+    rebuild  project the log into the derived index (--embed for vectors)
     verify   run the hard gate; non-zero exit on failure (the contract)
-    query    summary-first retrieval against the index
+    query    summary-first retrieval (--mode lexical|semantic|hybrid)
     seed     load the example records so you can try it in one command
     state    record a workflow transition with evidence (state layer)
     history  show the transition history of a workflow entity
@@ -22,6 +22,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from governed_memory.embeddings import default_embedder
 from governed_memory.events import (
     TransitionError,
     current_status,
@@ -74,8 +75,10 @@ def _cmd_write(args: argparse.Namespace) -> int:
 
 
 def _cmd_rebuild(args: argparse.Namespace) -> int:
-    count = rebuild_index(args.memory_dir, args.db)
-    print(f"rebuilt index from {count} record(s) -> {args.db}")
+    embedder = default_embedder() if args.embed else None
+    count = rebuild_index(args.memory_dir, args.db, embedder=embedder)
+    suffix = " (with vectors)" if embedder is not None else ""
+    print(f"rebuilt index from {count} record(s) -> {args.db}{suffix}")
     return 0
 
 
@@ -86,13 +89,18 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 
 def _cmd_query(args: argparse.Namespace) -> int:
-    hits = query(
-        args.db,
-        args.text,
-        limit=args.limit,
-        open_body=args.open_body,
-        reveal=args.reveal,
-    )
+    try:
+        hits = query(
+            args.db,
+            args.text,
+            limit=args.limit,
+            open_body=args.open_body,
+            reveal=args.reveal,
+            mode=args.mode,
+        )
+    except ValueError as exc:
+        print(str(exc))
+        return 1
     if not hits:
         print("no matches")
         return 0
@@ -167,6 +175,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_rebuild = sub.add_parser("rebuild", help="rebuild the derived index")
     _add_common(p_rebuild)
+    p_rebuild.add_argument(
+        "--embed",
+        action="store_true",
+        help="also compute summary vectors for semantic/hybrid search",
+    )
     p_rebuild.set_defaults(func=_cmd_rebuild)
 
     p_verify = sub.add_parser("verify", help="run the integrity gate")
@@ -177,6 +190,12 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(p_query)
     p_query.add_argument("text", help="free-text query")
     p_query.add_argument("--limit", type=int, default=5)
+    p_query.add_argument(
+        "--mode",
+        choices=["lexical", "semantic", "hybrid"],
+        default="lexical",
+        help="recall signal: lexical (FTS, default), semantic (vectors), or hybrid",
+    )
     p_query.add_argument("--open-body", action="store_true", help="include record bodies")
     p_query.add_argument(
         "--reveal",

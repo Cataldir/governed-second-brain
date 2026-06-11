@@ -141,6 +141,33 @@ of a smooth autocomplete. See
 operational rule in
 [`content-visibility.instructions.md`](.github/instructions/content-visibility.instructions.md).
 
+## Semantic and hybrid retrieval
+
+Lexical search is the floor and the default. When good summaries stop being
+enough — the corpus is large and a query misses a record that says the same
+thing in different words — add summary vectors and search by meaning too:
+
+```bash
+governed-memory rebuild --embed                      # compute summary vectors
+governed-memory query "audit trail" --mode semantic  # vector similarity only
+governed-memory query "audit trail" --mode hybrid    # keyword + vector, fused
+```
+
+Three rules keep this faithful to the rest of the architecture:
+
+- **Summaries only, never bodies.** Vectors cover the same navigation text the
+  FTS index does. A private body is never embedded, so semantic recall cannot
+  bypass the visibility floor.
+- **Derived and disposable.** Vectors live in the `memory.sqlite` index,
+  written by `rebuild --embed` and reconciled by `verify`. Delete and rebuild;
+  nothing is lost.
+- **Pluggable, dependency-free default.** The built-in encoder is stdlib-only
+  and deterministic — it exercises the full vector path but is lexical at heart.
+  To catch true paraphrases, plug a real embedding model in behind the
+  `Embedder` protocol in `src/governed_memory/embeddings.py`; nothing else
+  changes. See
+  [ADR-006](docs/architecture/adr/ADR-006-semantic-retrieval.md).
+
 ## The loop, worked end to end
 
 The pieces compose into a weekly review: capture notes → rebuild + verify →
@@ -185,12 +212,21 @@ Two boundaries do the work:
 - **State is a separate append-only log.** Transitions are validated against the
   current status and carry evidence. (See
   [ADR-005](docs/architecture/adr/ADR-005-state-event-layer.md).)
+- **Semantic retrieval is optional and summary-only.** Vectors are derived,
+  default-off, pluggable, and never built from bodies. (See
+  [ADR-006](docs/architecture/adr/ADR-006-semantic-retrieval.md).)
 
 ## What this is honest about
 
-- **No embeddings.** Full-text search over good summaries goes a long way. Vector
-  retrieval is a real upgrade *later*, once the corpus is large enough that
-  keyword matching misses paraphrases — not on day one.
+- **Embeddings are optional, summary-only, and pluggable.** The default install
+  is dependency-free and searches with SQLite FTS5. When the corpus grows past
+  what keyword matching covers, `rebuild --embed` adds summary vectors and
+  `query --mode hybrid` blends keyword and vector recall. Vectors are built from
+  navigation text only — never bodies — so semantic search cannot bypass the
+  visibility floor. The built-in encoder is stdlib-only and lexical at heart; to
+  catch genuine paraphrases, plug a real embedding model in behind the same
+  small `Embedder` protocol. (See
+  [ADR-006](docs/architecture/adr/ADR-006-semantic-retrieval.md).)
 - **No cloud, no MCP exfiltration.** The store is local files. The optional MCP
   server speaks local stdio only — it binds no socket and ships nothing off the
   machine. Its write tools are off by default behind a deliberate two-flag

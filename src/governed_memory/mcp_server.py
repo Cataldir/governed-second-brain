@@ -37,6 +37,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from governed_memory.embeddings import default_embedder
 from governed_memory.events import TransitionError, current_status, record_transition
 from governed_memory.gate import GatePolicy, write_gate_error
 from governed_memory.index import rebuild_index
@@ -68,7 +69,9 @@ async def list_tools() -> list[Tool]:
             description=(
                 "Summary-first retrieval. Returns titles and summaries; bodies "
                 "only when open_body is true. Bodies of non-public records are "
-                "redacted unless reveal is also true. Always available (read-only)."
+                "redacted unless reveal is also true. mode selects the recall "
+                "signal: lexical (FTS, default), semantic (vectors) or hybrid. "
+                "Always available (read-only)."
             ),
             inputSchema={
                 "type": "object",
@@ -77,6 +80,11 @@ async def list_tools() -> list[Tool]:
                     "limit": {"type": "integer", "default": 5},
                     "open_body": {"type": "boolean", "default": False},
                     "reveal": {"type": "boolean", "default": False},
+                    "mode": {
+                        "type": "string",
+                        "enum": ["lexical", "semantic", "hybrid"],
+                        "default": "lexical",
+                    },
                 },
                 "required": ["text"],
             },
@@ -124,10 +132,16 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="memory.rebuild",
             description=(
-                "Rebuild the derived SQLite index from the canonical log. GATED: "
-                "refused unless write mode is explicitly enabled."
+                "Rebuild the derived SQLite index from the canonical log. Set "
+                "embed=true to also compute summary vectors for semantic search. "
+                "GATED: refused unless write mode is explicitly enabled."
             ),
-            inputSchema={"type": "object", "properties": {}},
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "embed": {"type": "boolean", "default": False},
+                },
+            },
         ),
         Tool(
             name="memory.record_event",
@@ -172,8 +186,9 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                 limit=int(arguments.get("limit", 5)),
                 open_body=bool(arguments.get("open_body", False)),
                 reveal=bool(arguments.get("reveal", False)),
+                mode=arguments.get("mode", "lexical"),
             )
-        except FileNotFoundError as exc:
+        except (FileNotFoundError, ValueError) as exc:
             return _text({"error": str(exc)}, status="error")
         return _text(
             {
@@ -215,8 +230,11 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return _text({"id": saved.id, "type": saved.type})
 
     if name == "memory.rebuild":
-        count = rebuild_index(memory_dir, db_path)
-        return _text({"records_indexed": count})
+        embedder = default_embedder() if arguments.get("embed", False) else None
+        count = rebuild_index(memory_dir, db_path, embedder=embedder)
+        return _text(
+            {"records_indexed": count, "vectors": embedder is not None}
+        )
 
     if name == "memory.record_event":
         try:

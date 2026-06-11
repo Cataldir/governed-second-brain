@@ -48,3 +48,4 @@ index, a verifier, and a strict append-only/derived split.
 - [ADR-003 — The governed write surface (MCP): execution-plane, default-off, local-only](adr/ADR-003-governed-write-surface.md)
 - [ADR-004 — Visibility is a read-path boundary, not a label](adr/ADR-004-content-visibility-boundary.md)
 - [ADR-005 — State is a separate append-only log from records](adr/ADR-005-state-event-layer.md)
+- [ADR-006 — Semantic retrieval is optional, summary-only, derived, and pluggable](adr/ADR-006-semantic-retrieval.md)

@@ -14,6 +14,12 @@ Two classes of error are fatal:
    disagree about which records exist. A projection that has silently diverged
    from its source is a lie the query path will trust.
 
+When the index carries embeddings, a third class is fatal too:
+
+3. **Vector drift** — the index was embedded but a record is missing its
+   vector (or a vector has no record). A half-embedded index returns
+   incomplete semantic results without saying so.
+
 ``verify`` returns a result; the CLI turns a non-empty error list into a
 non-zero exit code so it can sit in a hook or a CI step.
 """
@@ -68,11 +74,32 @@ def verify(memory_dir: Path, db_path: Path) -> VerifyResult:
             index_ids = {
                 row[0] for row in connection.execute("SELECT id FROM records")
             }
+            # 3. Vector drift: if the index carries embeddings, every record
+            #    must have exactly one vector and vice versa. An index that was
+            #    embedded once and then partially rebuilt would silently return
+            #    incomplete semantic results otherwise.
+            has_embedder = connection.execute(
+                "SELECT 1 FROM meta WHERE key = 'embedder'"
+            ).fetchone()
+            vector_ids = {
+                row[0] for row in connection.execute("SELECT id FROM vectors")
+            }
         finally:
             connection.close()
         for missing in sorted(log_ids - index_ids):
             errors.append(f"record {missing} is in the log but not in the index")
         for orphan in sorted(index_ids - log_ids):
             errors.append(f"record {orphan} is in the index but not in the log")
+
+        if has_embedder:
+            for missing in sorted(index_ids - vector_ids):
+                errors.append(f"record {missing} is indexed but has no vector")
+            for orphan in sorted(vector_ids - index_ids):
+                errors.append(f"vector {orphan} has no matching record")
+        elif vector_ids:
+            errors.append(
+                "vectors exist but no embedder is recorded in meta — "
+                "rebuild to reconcile"
+            )
 
     return VerifyResult(ok=not errors, errors=errors)
