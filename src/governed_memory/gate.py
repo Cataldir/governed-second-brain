@@ -22,8 +22,11 @@ from dataclasses import dataclass
 # Tools that mutate governed state. Everything else is read-only.
 # ``memory.record_event`` appends a transition to the state log, so it is a
 # mutation and is gated exactly like writes to the canonical record log.
+# ``mirror.sync`` rewrites the .github operational mirror files from their
+# canonical sources, so it mutates the working tree and is gated the same way;
+# its read-only sibling ``mirror.check`` only reports drift and is never gated.
 MUTATING_TOOLS = frozenset(
-    {"memory.append", "memory.rebuild", "memory.record_event"}
+    {"memory.append", "memory.rebuild", "memory.record_event", "mirror.sync"}
 )
 
 ENABLE_WRITE_ENV = "GOVERNED_MEMORY_ENABLE_WRITE"

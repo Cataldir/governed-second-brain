@@ -9,8 +9,8 @@ Security posture, mirrored from the parent reference implementation:
 
 - **Local stdio only.** No HTTP, no network bind. Nothing here listens on a
   socket or ships a record off the machine.
-- **Writes default-off.** ``memory.append``, ``memory.rebuild`` and
-  ``memory.record_event`` are refused unless
+- **Writes default-off.** ``memory.append``, ``memory.rebuild``,
+  ``memory.record_event`` and ``mirror.sync`` are refused unless
   ``GOVERNED_MEMORY_ENABLE_WRITE=true`` *and*
   ``GOVERNED_MEMORY_REQUIRE_APPROVAL=false`` — a two-step, deliberate opt-in.
 - **Restricted records need acknowledgement.** Writing ``sensitivity=restricted``
@@ -18,6 +18,10 @@ Security posture, mirrored from the parent reference implementation:
 - **Reads are always available, but non-public bodies are redacted.**
   ``memory.query`` works regardless of the gate; the body of a ``private`` or
   ``restricted`` record is returned only when ``reveal=true`` is also passed.
+- **Mirror drift is readable; regeneration is gated.** ``mirror.check`` reports
+  operational-mirror drift and is always available; ``mirror.sync`` regenerates
+  the ``.github`` mirror from canonical ``data/agents/`` sources and is gated
+  like every other write.
 
 Run it:
 
@@ -41,6 +45,7 @@ from governed_memory.embeddings import default_embedder
 from governed_memory.events import TransitionError, current_status, record_transition
 from governed_memory.gate import GatePolicy, write_gate_error
 from governed_memory.index import rebuild_index
+from governed_memory.mirror import check_mirrors, sync_mirrors
 from governed_memory.query import query as query_store
 from governed_memory.records import MemoryRecord, RecordValidationError
 from governed_memory.store import append_record
@@ -163,6 +168,38 @@ async def list_tools() -> list[Tool]:
                 "required": ["entity", "to_status"],
             },
         ),
+        Tool(
+            name="mirror.check",
+            description=(
+                "Report operational-mirror drift without writing anything. "
+                "Compares the .github agent/prompt/skill mirrors against their "
+                "canonical sources under data/agents/ and lists any that are "
+                "stale, missing, or orphaned. Always available (read-only); the "
+                "same check the CLI exposes as 'sync-mirrors --check'."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "repo_root": {"type": "string", "default": "."},
+                },
+            },
+        ),
+        Tool(
+            name="mirror.sync",
+            description=(
+                "Regenerate the .github operational mirrors from canonical "
+                "sources under data/agents/: rewrite stale or missing mirrors and "
+                "prune orphans whose canonical source was deleted. Mirrors are "
+                "byte-identical to canonical and must never be hand-edited. "
+                "GATED: refused unless write mode is explicitly enabled."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "repo_root": {"type": "string", "default": "."},
+                },
+            },
+        ),
     ]
 
 
@@ -256,6 +293,24 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                 "evidence": event.evidence,
             },
             status="recorded",
+        )
+
+    if name == "mirror.check":
+        result = check_mirrors(Path(arguments.get("repo_root", ".")))
+        return _text(
+            {"drift": result.drift, "clean": result.ok},
+            status="ok" if result.ok else "drift",
+        )
+
+    if name == "mirror.sync":
+        result = sync_mirrors(Path(arguments.get("repo_root", ".")))
+        return _text(
+            {
+                "written": [str(path) for path in result.written],
+                "pruned": [str(path) for path in result.pruned],
+                "clean": result.ok,
+            },
+            status="synced",
         )
 
     return _text({"error": f"unknown tool {name}"}, status="error")

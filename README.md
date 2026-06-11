@@ -119,13 +119,17 @@ GOVERNED_MEMORY_ENABLE_WRITE=true GOVERNED_MEMORY_REQUIRE_APPROVAL=false \
 ```
 
 - **Local stdio only.** No socket, no HTTP, no record leaves the machine.
-- **Writes default-off.** `memory.append`, `memory.rebuild` and
-  `memory.record_event` are refused unless *both* flags above are set.
-  `memory.query` is never gated.
+- **Writes default-off.** `memory.append`, `memory.rebuild`,
+  `memory.record_event` and `mirror.sync` are refused unless *both* flags above
+  are set. `memory.query` and `mirror.check` are never gated.
 - **Restricted records need acknowledgement**, enforced by the store.
 - **Non-public bodies are redacted on read.** `memory.query` returns a
   `private`/`restricted` body only when `reveal: true` is also passed; otherwise
   the hit carries its summary and is marked `redacted`.
+- **The mirror sync is reachable too.** `mirror.check` reports operational-mirror
+  drift (read-only); `mirror.sync` regenerates the `.github` mirror from
+  canonical `data/agents/` and is gated like every other write — the same job
+  the CLI runs as `governed-memory sync-mirrors`.
 
 See [ADR-003](docs/architecture/adr/ADR-003-governed-write-surface.md) for the
 reasoning.

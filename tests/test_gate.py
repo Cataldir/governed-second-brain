@@ -37,6 +37,16 @@ def test_record_event_is_gated_like_a_write() -> None:
     assert write_gate_error("memory.record_event", open_gate) is None
 
 
+def test_mirror_sync_is_gated_but_check_is_not() -> None:
+    # Regenerating the operational mirror rewrites files in the working tree, so
+    # it obeys the write gate; reporting drift is read-only and always available.
+    closed = GatePolicy()
+    assert write_gate_error("mirror.sync", closed) is not None
+    assert write_gate_error("mirror.check", closed) is None
+    open_gate = GatePolicy(enable_write=True, require_approval=False)
+    assert write_gate_error("mirror.sync", open_gate) is None
+
+
 def test_reads_are_never_gated() -> None:
     policy = GatePolicy()  # most restrictive
     assert write_gate_error("memory.query", policy) is None
