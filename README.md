@@ -1,16 +1,40 @@
 # governed-second-brain
 
-A reference architecture for an AI memory layer that earns the word *memory*.
+A personal memory layer you extend your own mind with — and that earns the word
+*memory*.
 
-Most "AI second brain" setups are a folder of notes and a hopeful prompt. They
-work until they don't: notes pile up faster than anything can navigate them, a
-citation rule that lives in a prompt fails confidently and rarely, and a derived
-view drifts from its source while everyone keeps trusting it.
+We are all told to extend our minds with AI: let it be your second brain. Then
+you watch the memory it gives you. It makes things up — recalls a decision you
+never made, a doc that never existed, and sounds sure. It is a black box — you
+cannot see what it holds, inspect it, or carry it with you. And it does not grow
+with you — it has no idea what *you* decided matters, so the one thing you needed
+drowns in a week of noise. So you stop trusting it with anything that counts. A
+second brain you cannot trust is not a second brain.
 
-This repository is the smallest faithful answer to those three failures. It is
-not a product. It is a *shape* — a governed store where canonical records are
-append-only, the search index is derived and disposable, and an executable
-verifier decides whether the memory is intact.
+This repository is the smallest faithful answer. It is a memory that is yours:
+
+- **It does not make things up.** Every answer comes from something *you* saved,
+  and it comes back with its source. No source, no answer — it would rather stay
+  silent than invent.
+- **It stays yours to inspect.** The truth is an append-only log you own and can
+  read with your own eyes; the search index is a derived, disposable copy rebuilt
+  from it. Not a black box — you can open it, carry it, and prove it.
+- **It grows with you.** It captures what you decided matters, keeps the signal
+  above the noise, and helps you survey what is open and plan what is next.
+
+And it makes the assistant you already use trustworthy. Over the Model Context
+Protocol, an agent runtime — Copilot, Copilot Studio, Microsoft 365 Copilot, or
+any MCP client — grounds on this store, so the AI you talk to every day answers
+from a memory that won't lie and that you own. This layer doesn't route around
+your assistant; it gives it the trustworthy memory underneath.
+
+It is not a product. It is a *shape* — a governed store where canonical records
+are append-only, the search index is derived and disposable, and an executable
+verifier decides whether the memory is intact. It is the smallest faithful
+answer to the three failures most "AI second brain" setups share: notes pile up
+faster than anything can navigate them, a citation rule that lives in a prompt
+fails confidently and rarely, and a derived view drifts from its source while
+everyone keeps trusting it.
 
 It is dependency-free. A memory layer should not fall over because of a
 `pip install`. The only thing it needs is a Python standard library with SQLite
